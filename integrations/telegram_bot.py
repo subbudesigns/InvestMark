@@ -31,9 +31,10 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("addlist", self.addlist_command))
         self.app.add_handler(CommandHandler("showlist", self.showlist_command))
         self.app.add_handler(CommandHandler("calc", self.calc_command))
+        self.app.add_handler(CommandHandler("removelist", self.removelist_command))
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text("Welcome to InvestMark Bot!  Use \n /buy SYMBOL QTY for buying stocks \n /sell SYMBOL QTY for selling stocks \n /predict SYMBOL for predicting stock prices \n /setlimit SYMBOL SL TARGET for setting stop loss and target prices \n /addlist SYMBOL to add to wishlist \n /showlist to display wishlist \n /calc SYMBOL QTY to calculate total price and taxes.")
+        await update.message.reply_text("Welcome to InvestMark Bot!  Use \n /buy SYMBOL QTY for buying stocks \n /sell SYMBOL QTY for selling stocks \n /predict SYMBOL for predicting stock prices \n /setlimit SYMBOL SL TARGET for setting stop loss and target prices \n /addlist SYMBOL to add to wishlist \n /removelist SYMBOL to remove from wishlist \n /showlist to display wishlist \n /calc SYMBOL QTY to calculate total price and taxes.")
 
     async def portfolio_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         holdings = self.trader.get_holdings()
@@ -123,6 +124,19 @@ class TelegramBot:
             await update.message.reply_text(f"✅ {symbol} added to wishlist.")
         else:
             await update.message.reply_text(f"ℹ️ {symbol} is already in the wishlist.")
+
+    async def removelist_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text("Usage: /removelist SYMBOL")
+            return
+        symbol = context.args[0].upper()
+        wl = self._read_wishlist()
+        if symbol in wl:
+            wl.remove(symbol)
+            self._write_wishlist(wl)
+            await update.message.reply_text(f"✅ {symbol} removed from wishlist.")
+        else:
+            await update.message.reply_text(f"ℹ️ {symbol} is not in the wishlist.")
 
     async def showlist_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         wl = self._read_wishlist()

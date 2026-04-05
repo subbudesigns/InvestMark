@@ -63,5 +63,6 @@ Once the `daemon` is running, send the following over Telegram:
 - `/sell SYMBOL QTY`
 - `/setlimit SYMBOL SL TARGET`
 - `/addlist SYMBOL` (Add stock to wishlist)
+- `/removelist SYMBOL` (Remove stock from wishlist)
 - `/showlist` (Show wishlist with live prices)
 - `/calc SYMBOL QTY` (Calculate total price and estimated taxes)
