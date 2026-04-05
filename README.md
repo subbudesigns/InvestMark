@@ -6,7 +6,7 @@ A production-ready CLI-based stock trading system with modular architecture in P
 
 - **CLI Trading**: Buy, Sell, Hold stock quantities directly from the terminal.
 - **Portfolio Tracking**: Locally manage and summarize holdings via lightweight JSON files.
-- **Zerodha Kite Integration**: Direct API connection to execute trades and fetch latest prices.
+- **Groww API Integration**: Direct API connection to execute trades and fetch latest prices.
 - **Limits & Automation**: Set target and stop-loss limits which trigger auto-sells via a daemon watcher.
 - **Telegram Bot**: Monitor portfolio, receive limit alerts, and trade directly from Telegram asynchronously.
 - **Predictive Analytics**: On-the-fly technical analysis using `yfinance` and `scikit-learn` for next-day price prediction.
@@ -23,7 +23,7 @@ A production-ready CLI-based stock trading system with modular architecture in P
    ```bash
    copy .env.example .env
    ```
-   - *Zerodha Kite*: You need an active developer account at [Kite Connect](https://kite.trade/).
+   - *Groww Trading API*: Subscribe and generate your API tokens from the Groww developer dashboard.
    - *Telegram*: Create a new bot using [BotFather](https://t.me/botfather) and get the token. Find your Chat ID so the bot can send you limit hit alerts.
 
 ## Usage Examples

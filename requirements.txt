@@ -1,4 +1,4 @@
-kiteconnect
+growwapi
 python-telegram-bot
 yfinance
 scikit-learn

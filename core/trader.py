@@ -1,4 +1,4 @@
-from integrations.zerodha import ZerodhaClient
+from integrations.groww import GrowwClient
 from core.portfolio import Portfolio
 from core.limits import LimitManager
 from utils.logger import get_logger
@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 class Trader:
     def __init__(self):
-        self.client = ZerodhaClient()
+        self.client = GrowwClient()
         self.portfolio = Portfolio()
         self.limits = LimitManager()
 
