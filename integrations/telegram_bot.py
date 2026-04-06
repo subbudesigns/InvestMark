@@ -42,9 +42,48 @@ class TelegramBot:
             await update.message.reply_text("Portfolio is empty.")
             return
         
-        msg = "📈 **Portfolio Summary**\n"
+        await update.message.reply_text("⏳ Fetching live prices for portfolio...")
+        
+        msg = "📈 **Portfolio Summary**\n\n"
+        total_invested = 0.0
+        total_current = 0.0
+        
         for sym, d in holdings.items():
-            msg += f"- {sym}: {d['quantity']} @ ₹{round(d['avg_price'],2)}\n"
+            qty = d['quantity']
+            if qty == 0:
+                continue
+            
+            avg_price = d['avg_price']
+            invested = d.get('total_invested', qty * avg_price)
+            
+            ltp = self.trader.client.get_ltp(sym)
+            if ltp:
+                current_val = qty * ltp
+                pnl = current_val - invested
+                pnl_pct = (pnl / invested) * 100 if invested > 0 else 0
+                
+                total_invested += invested
+                total_current += current_val
+                
+                emoji = "🟩" if pnl >= 0 else "🟥"
+                msg += f"**{sym}** ({qty} shares)\n"
+                msg += f"Avg: ₹{round(avg_price, 2)} | LTP: ₹{round(ltp, 2)}\n"
+                msg += f"Invested: ₹{round(invested, 2)} | Current: ₹{round(current_val, 2)}\n"
+                msg += f"P&L: {emoji} ₹{round(pnl, 2)} ({round(pnl_pct, 2)}%)\n\n"
+            else:
+                msg += f"**{sym}** ({qty} shares) - Error fetching live price\n\n"
+                total_invested += invested
+                total_current += invested
+
+        overall_pnl = total_current - total_invested
+        overall_pnl_pct = (overall_pnl / total_invested) * 100 if total_invested > 0 else 0
+        overall_emoji = "🟩" if overall_pnl >= 0 else "🟥"
+        
+        msg += "📊 **Overall Summary**\n"
+        msg += f"Total Invested: ₹{round(total_invested, 2)}\n"
+        msg += f"Current Value: ₹{round(total_current, 2)}\n"
+        msg += f"Total P&L: {overall_emoji} ₹{round(overall_pnl, 2)} ({round(overall_pnl_pct, 2)}%)"
+        
         await update.message.reply_text(msg, parse_mode='Markdown')
 
     async def buy_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

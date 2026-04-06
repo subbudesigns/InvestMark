@@ -32,10 +32,37 @@ def handle_portfolio(args):
         return
     
     table = []
-    for sym, data in holdings.items():
-        table.append([sym, data['quantity'], round(data['avg_price'], 2), round(data['total_invested'], 2)])
+    total_invested = 0.0
+    total_current = 0.0
     
-    print(tabulate(table, headers=["Symbol", "Quantity", "Avg Price", "Total Invested"], tablefmt="grid"))
+    print("Fetching live prices...")
+    for sym, data in holdings.items():
+        qty = data['quantity']
+        if qty == 0:
+            continue
+        avg_price = data['avg_price']
+        invested = data.get('total_invested', qty * avg_price)
+        
+        ltp = trader.get_ltp(sym)
+        if ltp:
+            current_val = qty * ltp
+            pnl = current_val - invested
+            pnl_pct = (pnl / invested) * 100 if invested > 0 else 0
+            total_invested += invested
+            total_current += current_val
+            
+            pnl_str = f"₹{round(pnl, 2)} ({round(pnl_pct, 2)}%)"
+            table.append([sym, qty, round(avg_price, 2), round(ltp, 2), round(invested, 2), round(current_val, 2), pnl_str])
+        else:
+            table.append([sym, qty, round(avg_price, 2), "Error", round(invested, 2), "Error", "Error"])
+            total_invested += invested
+            total_current += invested
+            
+    print(tabulate(table, headers=["Symbol", "Qty", "Avg Price", "LTP", "Invested", "Current Value", "P&L"], tablefmt="grid"))
+    
+    overall_pnl = total_current - total_invested
+    overall_pnl_pct = (overall_pnl / total_invested) * 100 if total_invested > 0 else 0
+    print(f"\n📊 Total Invested: ₹{round(total_invested, 2)} | Current Value: ₹{round(total_current, 2)} | Overall P&L: ₹{round(overall_pnl, 2)} ({round(overall_pnl_pct, 2)}%)")
 
 def handle_predict(args):
     predictor = Predictor()
