@@ -1,7 +1,7 @@
 import utils.config as config
 from utils.logger import get_logger
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 from core.trader import Trader
 from core.predictor import Predictor
 
@@ -32,6 +32,7 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("showlist", self.showlist_command))
         self.app.add_handler(CommandHandler("calc", self.calc_command))
         self.app.add_handler(CommandHandler("removelist", self.removelist_command))
+        self.app.add_handler(CallbackQueryHandler(self.button_callback))
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Welcome to InvestMark Bot!  Use \n /buy SYMBOL QTY for buying stocks \n /sell SYMBOL QTY for selling stocks \n /predict SYMBOL for predicting stock prices \n /setlimit SYMBOL SL TARGET for setting stop loss and target prices \n /addlist SYMBOL to add to wishlist \n /removelist SYMBOL to remove from wishlist \n /showlist to display wishlist \n /calc SYMBOL QTY to calculate total price and taxes.")
@@ -90,12 +91,65 @@ class TelegramBot:
         if len(context.args) < 2:
             await update.message.reply_text("Usage: /buy SYMBOL QTY")
             return
-        symbol, qty = context.args[0], int(context.args[1])
-        success = self.trader.buy(symbol, qty)
-        if success:
-            await update.message.reply_text(f"✅ BUY order placed for {qty} {symbol}")
-        else:
-            await update.message.reply_text(f"❌ Failed to place BUY order for {symbol}")
+            
+        symbol = context.args[0].upper()
+        try:
+            qty = int(context.args[1])
+        except ValueError:
+            await update.message.reply_text("Quantity must be a valid number.")
+            return
+
+        price = self.trader.client.get_ltp(symbol)
+        if not price:
+            await update.message.reply_text(f"❌ Could not fetch live price for {symbol}. Invalid symbol or API error.")
+            return
+
+        base_total = price * qty
+        stt = base_total * 0.001
+        exch_txn = base_total * 0.0000345
+        sebi = base_total * 0.000001
+        stamp = base_total * 0.00015
+        gst = (exch_txn + sebi) * 0.18
+        total_tax = stt + exch_txn + sebi + stamp + gst
+        grand_total = base_total + total_tax
+
+        msg = (f"🛒 **Confirm BUY Order**\n"
+               f"Symbol: {symbol}\n"
+               f"Quantity: {qty}\n"
+               f"Live Price: ₹{round(price, 2)}\n"
+               f"Base Cost: ₹{round(base_total, 2)}\n"
+               f"Est. Taxes & Charges: ₹{round(total_tax, 2)}\n"
+               f"**Grand Total:** ₹{round(grand_total, 2)}\n\n"
+               f"Do you want to proceed?")
+
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Confirm Buy", callback_data=f"buy_{symbol}_{qty}"),
+                InlineKeyboardButton("❌ Cancel", callback_data="cancel_action")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
+
+    async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
+        data = query.data
+
+        if data == "cancel_action":
+            await query.edit_message_text(text="🚫 Action cancelled by user.")
+            return
+
+        if data.startswith("buy_"):
+            parts = data.split("_")
+            if len(parts) == 3:
+                symbol = parts[1]
+                qty = int(parts[2])
+                success = self.trader.buy(symbol, qty)
+                if success:
+                    await query.edit_message_text(text=f"✅ BUY order successfully placed for {qty} {symbol}.")
+                else:
+                    await query.edit_message_text(text=f"❌ Failed to place BUY order for {symbol}.")
 
     async def sell_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 2:

@@ -1,6 +1,6 @@
 growwapi
 python-telegram-bot
-yfinance
+
 scikit-learn
 pandas
 numpy

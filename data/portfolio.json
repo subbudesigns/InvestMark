@@ -1,12 +1,1 @@
-{
-    "OLAELC": {
-        "quantity": 10,
-        "avg_price": 100.0,
-        "total_invested": 1000.0
-    },
-    "TATAGOLD": {
-        "quantity": 10,
-        "avg_price": 14.300000190734863,
-        "total_invested": 143.00000190734863
-    }
-}
+{}
